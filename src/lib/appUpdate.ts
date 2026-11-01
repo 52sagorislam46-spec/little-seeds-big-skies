@@ -164,31 +164,15 @@ export function updateFileName(update: AppUpdate): string {
 
 /**
  * Starts the APK download directly from inside the app.
- * First tries a background fetch (same-origin or CORS-enabled links) so the
- * download attribute works without leaving the app; otherwise hands the URL
- * straight to the phone's downloader.
+ * Hands the link straight to the phone's own downloader (no in-memory blob),
+ * so Android shows its normal download notification instead of a "Save As"
+ * dialog. Called synchronously from the click so the tap is honoured.
  */
 export async function startAppUpdateDownload(update: AppUpdate): Promise<void> {
-  const filename = updateFileName(update);
-  try {
-    const res = await fetch(update.downloadUrl, { mode: "cors" });
-    if (!res.ok) throw new Error(`status ${res.status}`);
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    return;
-  } catch {
-    /* CORS or network — fall through to a direct download */
-  }
   const a = document.createElement("a");
   a.href = update.downloadUrl;
-  a.download = filename;
+  a.download = updateFileName(update);
+  a.rel = "noopener";
   document.body.appendChild(a);
   a.click();
   a.remove();

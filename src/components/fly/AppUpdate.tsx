@@ -82,7 +82,7 @@ export function AppUpdateModal({
         </button>
         {done && (
           <p className="text-xs font-medium text-emerald-600">
-            ডাউনলোড শেষ! ফোনের নোটিফিকেশন বা ফাইল ম্যানেজার থেকে ইনস্টল করুন।
+            ডাউনলোড শুরু হয়েছে! ফোনের ওপরের নোটিফিকেশনে ডাউনলোড শেষ হলে সেটিতে ট্যাপ করে "Install" চাপুন।
           </p>
         )}
         {failed && (
