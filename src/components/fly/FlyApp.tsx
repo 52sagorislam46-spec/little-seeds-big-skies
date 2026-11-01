@@ -3,6 +3,7 @@ import { initAppLanguage } from "../../lib/appLanguage";
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { rankForYou, stableAppend, trendingTags, viralIds } from "./recommend";
 import { AD_CONFIG, BannerAd, InterstitialHost } from "./ads";
+import { AppUpdateBanner } from "./AppUpdate";
 import { Bell, Bird, Loader2, Menu, Pause, Search } from "lucide-react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../lib/firebase";
@@ -435,6 +436,10 @@ function Shell() {
       )}
 
       {composing && <CreatePostModal onClose={() => setComposing(false)} />}
+
+      {tab === "home" && !viewProfile && !searching && !notifying && !callHistory && (
+        <AppUpdateBanner />
+      )}
 
       <BottomNav
         active={tab}
