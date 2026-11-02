@@ -205,15 +205,24 @@ function Reel({
       { threshold: [0, 0.6, 1] },
     );
     observer.observe(el);
+    // Pause this reel the moment a full-screen ad opens (no click needed),
+    // keeping currentTime so it resumes from the exact same spot later.
+    const onAdOpened = () => {
+      const r = el.getBoundingClientRect();
+      const visible = Math.min(r.bottom, window.innerHeight) - Math.max(r.top, 0);
+      if (r.height > 0 && visible / r.height > 0.6 && !el.paused) el.pause();
+    };
     // Resume this reel after a full-screen ad closes, if it's on screen.
     const onAdClosed = () => {
       const r = el.getBoundingClientRect();
       const visible = Math.min(r.bottom, window.innerHeight) - Math.max(r.top, 0);
       if (r.height > 0 && visible / r.height > 0.6) el.play().catch(() => {});
     };
+    window.addEventListener("fly-ad-opened", onAdOpened);
     window.addEventListener("fly-ad-closed", onAdClosed);
     return () => {
       observer.disconnect();
+      window.removeEventListener("fly-ad-opened", onAdOpened);
       window.removeEventListener("fly-ad-closed", onAdClosed);
       flushWatch();
     };
