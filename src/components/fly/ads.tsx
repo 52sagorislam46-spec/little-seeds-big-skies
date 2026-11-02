@@ -100,13 +100,33 @@ function AdVideo({ onEnded }: { onEnded?: () => void }) {
   useEffect(() => {
     const v = ref.current;
     if (!v) return;
-    v.muted = false;
-    v.play().catch(() => {
-      // Mobile autoplay policy: retry muted so the video always shows.
-      v.muted = true;
-      setMuted(true);
-      v.play().catch(() => {});
-    });
+    let cancelled = false;
+    const tryPlay = async (withSound: boolean) => {
+      try {
+        v.muted = !withSound;
+        setMuted(!withSound);
+        await v.play();
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    const start = async () => {
+      // Try with sound first — the reel behind has already been paused and
+      // released the audio channel — then fall back to muted autoplay.
+      if (await tryPlay(true)) return;
+      if (cancelled) return;
+      await tryPlay(false);
+    };
+    start();
+    const onCanPlay = () => {
+      if (ref.current && ref.current.paused) start();
+    };
+    v.addEventListener("canplay", onCanPlay);
+    return () => {
+      cancelled = true;
+      v.removeEventListener("canplay", onCanPlay);
+    };
   }, []);
   return (
     <>
@@ -164,6 +184,8 @@ export function InterstitialHost() {
   useEffect(() => {
     const l = () => {
       setLeft(5);
+      // Tell the visible reel to pause itself before the ad starts playing.
+      window.dispatchEvent(new Event("fly-ad-opened"));
       setOpen(true);
     };
     listeners.add(l);
