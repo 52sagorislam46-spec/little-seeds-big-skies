@@ -113,5 +113,7 @@ const REAL_REELS: Post[] = REAL_VIDEOS.map(([url, text, tags], i) => {
   };
 });
 
-// Real videos (with sound) first, then the earlier preloaded reels — nothing removed.
-export const PRELOADED_REELS: Post[] = [...REAL_REELS, ...STOCK_REELS];
+// Only real videos with sound are shown. STOCK_REELS (no audio track) are kept
+// in code but excluded from the feed per owner request.
+void STOCK_REELS;
+export const PRELOADED_REELS: Post[] = [...REAL_REELS];
