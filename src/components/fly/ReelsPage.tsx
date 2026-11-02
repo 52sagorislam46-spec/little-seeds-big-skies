@@ -887,7 +887,8 @@ export function ReelsPage({
         </button>
       </header>
 
-      <div className="absolute top-14 left-0 right-0 z-10">
+      {/* Tag filter bar hidden on Reels per owner request */}
+      <div className="hidden">
         <TagFilterBar tags={tags} active={tag} onChange={setTag} dark trending={trending} />
       </div>
 
