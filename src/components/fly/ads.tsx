@@ -184,6 +184,8 @@ export function InterstitialHost() {
   useEffect(() => {
     const l = () => {
       setLeft(5);
+      // Tell the visible reel to pause itself before the ad starts playing.
+      window.dispatchEvent(new Event("fly-ad-opened"));
       setOpen(true);
     };
     listeners.add(l);
