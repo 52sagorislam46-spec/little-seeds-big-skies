@@ -185,7 +185,11 @@ function Reel({
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry && entry.isIntersecting && entry.intersectionRatio > 0.6) {
-          el.play().catch(() => {});
+          el.play().catch(() => {
+            // Autoplay with sound blocked: play muted so the reel never stays stuck.
+            el.muted = true;
+            el.play().catch(() => {});
+          });
           registerView(post.id);
           onReelSeen();
           if (watchStart == null) watchStart = Date.now();
