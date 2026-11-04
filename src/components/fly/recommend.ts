@@ -50,12 +50,18 @@ function bump(post: Post, weight: number) {
   if (post.authorId) s.authors[post.authorId] = Math.min((s.authors[post.authorId] ?? 0) + weight, 100);
 }
 
-/** Call when a reel/video stops being watched. */
-export function recordWatch(post: Post, ms: number) {
+/** Call when a reel/video stops being watched. durationMs enables a completion bonus. */
+export function recordWatch(post: Post, ms: number, durationMs?: number) {
   if (!post?.id || ms < 500) return;
   const s = load();
   s.watch[post.id] = (s.watch[post.id] ?? 0) + ms;
-  bump(post, Math.min(ms / 5000, 3)); // up to +3 per watch
+  let weight = Math.min(ms / 5000, 3); // up to +3 per watch
+  if (durationMs && durationMs > 0) {
+    const ratio = ms / durationMs;
+    if (ratio >= 0.8) weight += 3; // watched (almost) fully: strong interest
+    else if (ms < 2000) weight -= 1; // quick skip: weak negative signal
+  }
+  bump(post, weight);
   save();
 }
 
@@ -63,6 +69,20 @@ export function recordWatch(post: Post, ms: number) {
 export function recordLike(post: Post, liked: boolean) {
   if (!post?.id) return;
   bump(post, liked ? 3 : -2);
+  save();
+}
+
+/** Call when the user comments on a post/reel. */
+export function recordComment(post: Post) {
+  if (!post?.id) return;
+  bump(post, 4);
+  save();
+}
+
+/** Call when the user shares a post/reel. */
+export function recordShare(post: Post) {
+  if (!post?.id) return;
+  bump(post, 5);
   save();
 }
 
@@ -98,10 +118,30 @@ export function forYouScore(p: Post, uid?: string, following: string[] = [], now
 
 export function rankForYou(posts: Post[], uid?: string, following: string[] = []): Post[] {
   const now = Date.now();
-  return [...posts]
-    .map((p) => ({ p, s: forYouScore(p, uid, following, now) }))
+  const viral = viralIds(posts);
+  const sorted = [...posts]
+    .map((p) => ({ p, s: forYouScore(p, uid, following, now) * (viral.has(p.id) ? 1.8 : 1) }))
     .sort((a, b) => b.s - a.s)
     .map((x) => x.p);
+  return diversify(sorted);
+}
+
+/** Avoid more than 3 reels in a row sharing the same main tag (Instagram-style mixing). */
+export function diversify(posts: Post[], maxRun = 3): Post[] {
+  const pending = [...posts];
+  const out: Post[] = [];
+  const main = (p: Post) => p.tags?.[0] ?? "";
+  while (pending.length) {
+    const last = out.slice(-maxRun);
+    const blocked = last.length === maxRun && last.every((p) => main(p) && main(p) === main(last[0]!));
+    let idx = 0;
+    if (blocked) {
+      const alt = pending.findIndex((p) => main(p) !== main(last[0]!));
+      if (alt >= 0) idx = alt;
+    }
+    out.push(pending.splice(idx, 1)[0]!);
+  }
+  return out;
 }
 
 /**
