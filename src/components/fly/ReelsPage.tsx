@@ -10,7 +10,7 @@ import { useAuth } from "./AuthContext";
 import { useReels } from "./usePosts";
 import { PRELOADED_REELS, isPreloadedReel } from "./preloadedReels";
 import { TagFilterBar, collectTags, filterByTag } from "./TagFilterBar";
-import { rankForYou, recordLike, recordWatch, stableAppend, trendingTags } from "./recommend";
+import { rankForYou, recordComment, recordLike, recordShare, recordWatch, stableAppend, trendingTags } from "./recommend";
 import { CommentItem } from "./PostCard";
 import { fetchProfile, sendMessage } from "./chat";
 import { timeAgo } from "../../lib/time";
@@ -178,7 +178,7 @@ function Reel({
     let watchStart: number | null = null;
     const flushWatch = () => {
       if (watchStart != null) {
-        recordWatch(post, Date.now() - watchStart);
+        recordWatch(post, Date.now() - watchStart, Number.isFinite(el.duration) ? el.duration * 1000 : undefined);
         watchStart = null;
       }
     };
@@ -273,6 +273,7 @@ function Reel({
 
   const addComment = async () => {
     if (!user || !profile || !commentText.trim()) return;
+    recordComment(post);
     setBusy(true);
     const comment: Comment = {
       id: `${Date.now()}-${user.uid}`,
@@ -318,6 +319,7 @@ function Reel({
 
   const sendToFriend = async (target: UserProfile) => {
     if (!user || sentTo.has(target.uid)) return;
+    recordShare(post);
     const url = reelUrl();
     updateDoc(ref, { shares: increment(1) })
       .catch(() => {})
@@ -335,6 +337,7 @@ function Reel({
   };
 
   const copyLink = async () => {
+    recordShare(post);
     const url = reelUrl();
     try {
       await navigator.clipboard?.writeText(url);
