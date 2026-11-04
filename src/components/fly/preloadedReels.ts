@@ -116,4 +116,53 @@ const REAL_REELS: Post[] = REAL_VIDEOS.map(([url, text, tags], i) => {
 // Only real videos with sound are shown. STOCK_REELS (no audio track) are kept
 // in code but excluded from the feed per owner request.
 void STOCK_REELS;
-export const PRELOADED_REELS: Post[] = [...REAL_REELS];
+// Sports reels (free Pexels clips, verified to have audible sound).
+const SPORTS_VIDEOS: [string, string, string[]][] = [
+  ["/__l5e/assets-v1/3f852b13-c364-41f3-8e84-8bef345375fe/sports-reel-01.mp4", "ফুটবল স্কিল দেখে মাথা ঘুরে যাবে ⚽🔥", ["football", "skills", "viral"]],
+  ["/__l5e/assets-v1/5c240d23-ac33-47e7-95cc-e9920a8eff7c/sports-reel-02.mp4", "মেসির মতো ড্রিবলিং চেষ্টা 😎⚽", ["football", "messi", "fyp"]],
+  ["/__l5e/assets-v1/86fcff9b-3277-44e8-a734-d03e5d98bf2e/sports-reel-03.mp4", "রোনালদো স্টাইল ফ্রি কিক প্র্যাকটিস 💪", ["football", "ronaldo", "reels"]],
+  ["/__l5e/assets-v1/db5e82c8-5ea5-499c-ade0-558f75725ea2/sports-reel-04.mp4", "বল কন্ট্রোল লেভেল: প্রো ⚽", ["football", "skills"]],
+  ["/__l5e/assets-v1/e4d0cca2-5319-4318-906f-029590be5d3d/sports-reel-05.mp4", "প্রতিদিনের ফুটবল ট্রেনিং 🏃‍♂️", ["football", "training", "viral"]],
+  ["/__l5e/assets-v1/bba253d2-9840-41ae-8ff7-421baf02fb8d/sports-reel-06.mp4", "এই ট্রিকটা শিখে নাও 👀⚽", ["football", "trick", "fyp"]],
+  ["/__l5e/assets-v1/89ab2ff3-b09f-4149-99f9-7e81a589db00/sports-reel-07.mp4", "মাঠের খেলা, আসল মজা ⚽❤️", ["football", "soccer", "reels"]],
+  ["/__l5e/assets-v1/e0b82aec-0d46-4b2a-a73d-5e0ed002f1b5/sports-reel-08.mp4", "গোওওওল! 🥅🔥", ["football", "goal", "viral"]],
+  ["/__l5e/assets-v1/a9595b07-d366-448f-9c1c-e50c0aaec73f/sports-reel-09.mp4", "বন্ধুদের সাথে বিকেলের ম্যাচ ⚽", ["football", "friends", "fyp"]],
+  ["/__l5e/assets-v1/c5a92fc4-d49c-44cc-a01a-73d230287675/sports-reel-10.mp4", "পাসিং গেম একদম পারফেক্ট 👌", ["football", "soccer"]],
+  ["/__l5e/assets-v1/1d50d622-e6a0-4bfe-b25c-a3b627534de1/sports-reel-11.mp4", "ফুটবল পাগলদের জন্য ⚽🔥", ["football", "viral", "reels"]],
+  ["/__l5e/assets-v1/0d03931d-a6f6-4103-8cf9-74c8bb7161e6/sports-reel-12.mp4", "শেষ পর্যন্ত দেখো, দারুণ মুভ 😍", ["football", "skills", "fyp"]],
+  ["/__l5e/assets-v1/d147f634-1702-4f7b-bc68-8b2e659e15e3/sports-reel-13.mp4", "বাস্কেটবলের দারুণ শট 🏀", ["basketball", "sports", "viral"]],
+];
+
+const SPORTS_REELS: Post[] = SPORTS_VIDEOS.map(([url, text, tags], i) => {
+  const c = CREATORS[(i * 3 + 1) % CREATORS.length]!;
+  const views = 15000 + ((i * 6151) % 300000);
+  const id = url.split("/").pop()!.replace(".mp4", "");
+  return {
+    id: `${PRELOADED_PREFIX}${id}`,
+    authorId: `${PRELOADED_PREFIX}${c.id}`,
+    authorName: c.name,
+    authorUsername: c.user,
+    authorPhoto: `https://i.pravatar.cc/150?img=${c.img}`,
+    text,
+    mediaUrl: url,
+    mediaType: "video/mp4",
+    likes: [],
+    comments: [],
+    tags,
+    views,
+    shares: Math.floor(views / 60),
+    createdAt: BASE - i * 4 * HOUR - HOUR,
+  };
+});
+
+// Mix: after every 2 original reels, one sports reel. All original reels kept.
+const mixed: Post[] = [];
+REAL_REELS.forEach((r, i) => {
+  mixed.push(r);
+  const s = SPORTS_REELS[Math.floor(i / 2)];
+  if (i % 2 === 1 && s) mixed.push(s);
+});
+SPORTS_REELS.slice(Math.ceil(REAL_REELS.length / 2)).forEach((s) => {
+  if (!mixed.includes(s)) mixed.push(s);
+});
+export const PRELOADED_REELS: Post[] = mixed;
