@@ -19,6 +19,7 @@ import { CreatePostModal } from "./CreatePostModal";
 import { ChatView } from "./ChatView";
 import { GroupChatView } from "./GroupChatView";
 import { MessagesPage } from "./MessagesPage";
+import { FlyAIPage } from "./FlyAIPage";
 import { CallHistoryPage } from "./CallHistoryPage";
 import { ProfilePage } from "./ProfilePage";
 import { SearchPage } from "./SearchPage";
@@ -241,6 +242,7 @@ function Shell() {
   const [searching, setSearching] = useState(false);
   const [notifying, setNotifying] = useState(false);
   const [callHistory, setCallHistory] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
   const { unread } = useAppNotifications(user?.uid);
   const hasUnreadMessages = useUnreadMessages();
   const feedApiRef = useRef<{ refresh: () => void } | null>(null);
@@ -421,7 +423,9 @@ function Shell() {
 
   return (
     <div className="mx-auto w-full max-w-md min-h-screen bg-white relative">
-      {callHistory ? (
+      {aiOpen ? (
+        <FlyAIPage onBack={() => setAiOpen(false)} onOpenChat={(p) => { setAiOpen(false); openChat(p); }} />
+      ) : callHistory ? (
         <CallHistoryPage
           onBack={() => setCallHistory(false)}
           onOpenProfile={openProfile}
@@ -474,6 +478,7 @@ function Shell() {
           onOpenChat={openChat}
           onOpenGroup={openGroup}
           onOpenCalls={() => setCallHistory(true)}
+          onOpenAI={() => setAiOpen(true)}
         />
       ) : (
         <ProfilePage
