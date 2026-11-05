@@ -22,6 +22,8 @@ import {
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { AppUpdateModal } from "./AppUpdate";
+import { aiHistoryPreview } from "./flyAiHistory";
+import { Bot } from "lucide-react";
 import { markUpdateSeen, useAppUpdate } from "../../lib/appUpdate";
 import { Avatar } from "./Avatar";
 import { useAuth } from "./AuthContext";
@@ -75,10 +77,12 @@ export function MessagesPage({
   onOpenChat,
   onOpenGroup,
   onOpenCalls,
+  onOpenAI,
 }: {
   onOpenChat: (profile: UserProfile) => void;
   onOpenGroup?: (group: GroupConversation) => void;
   onOpenCalls?: () => void;
+  onOpenAI?: () => void;
 }) {
   const { user } = useAuth();
   const { update: appUpdate, isNew: updateAvailable } = useAppUpdate();
@@ -101,6 +105,9 @@ export function MessagesPage({
   const [view, setView] = useState<"inbox" | "archived" | "hidden" | "blocked">(
     "inbox",
   );
+
+  const [aiPreview, setAiPreview] = useState<string | null>(null);
+  useEffect(() => { setAiPreview(aiHistoryPreview(user?.uid)); }, [user?.uid]);
 
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -356,6 +363,16 @@ export function MessagesPage({
 
       {/* stories row (Messenger style) */}
       <StoriesBar />
+
+      {view === "inbox" && aiPreview && onOpenAI && (
+        <button onClick={onOpenAI} className="w-full flex items-center gap-3 px-4 py-3 border-b border-gray-50 text-left active:bg-gray-50">
+          <span className="w-12 h-12 shrink-0 rounded-full bg-gradient-to-br from-sky-500 to-indigo-500 text-white flex items-center justify-center"><Bot size={24} /></span>
+          <span className="flex-1 min-w-0">
+            <span className="block font-semibold text-gray-900 text-sm">Fly AI</span>
+            <span className="block text-xs text-gray-500 truncate">{aiPreview}</span>
+          </span>
+        </button>
+      )}
 
       {loading ? (
         <p className="text-center text-sm text-gray-400 mt-10">Loading...</p>

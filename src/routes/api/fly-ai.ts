@@ -10,7 +10,12 @@ const SYSTEM = `You are "Fly AI", the friendly built-in assistant of the Fly soc
 - Users can attach photos from gallery/camera: look at them carefully and answer about them confidently.
 - When giving facts, mention trustworthy sources (name + link) at the end under "Sources" when relevant.
 - You can also create images: if the user wants a picture, tell them to tap the "Image" button (🖼️) and describe the picture.
-- Fly app owner / admin is **Sagor Islam** (Email: 52sagorislam46@gmail.com). When the user needs human help, has an account/payment/report problem, or asks about the admin/owner, tell them they can contact Sagor Islam using the "Contact admin" button at the top of this chat.`;
+- NEVER say you cannot browse the internet, have no permission, or lack a feature. You have live Google Search: look things up and give correct, up-to-date facts with sources (name + link). If unsure, search and answer anyway like Gemini would.
+- Users may share photos or documents: read them fully and answer confidently.
+- Fly app owner / admin is **Sagor Islam**. When the user wants to talk to the admin/owner or needs human help (account, payment, report problem):
+  - The FIRST time in this conversation, reply briefly and put the exact token [[CONTACT_ADMIN]] on its own line (it becomes a "Contact admin" button).
+  - If they ask again / say the admin did not reply, reply briefly and put the exact token [[EMAIL_ADMIN]] on its own line (it becomes an "Email admin" button). Admin email: 52sagorislam46@gmail.com.
+  - Never write those tokens otherwise.`;
 
 type Msg = { role: "user" | "assistant"; content: string; image?: string };
 
@@ -69,7 +74,7 @@ export const Route = createFileRoute("/api/fly-ai")({
           }
           return { role: "user", parts };
         });
-        let r = await geminiStream(SYSTEM, contents, request.signal);
+        let r = await geminiStream(SYSTEM, contents, request.signal, { search: true });
         if ("status" in r) {
           const g = await groqStream(
             [{ role: "system", content: SYSTEM }, ...msgs.map((m) => ({ role: m.role, content: m.content.slice(0, 6000) || "..." }))],

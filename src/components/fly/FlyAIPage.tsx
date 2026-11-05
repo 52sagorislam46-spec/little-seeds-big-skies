@@ -6,6 +6,8 @@ import { db } from "../../lib/firebase";
 import { fetchProfile } from "./chat";
 import type { UserProfile } from "./types";
 import { ImageLightbox } from "./ImageLightbox";
+import { useAuth } from "./AuthContext";
+import { aiHistoryKey, AI_WELCOME } from "./flyAiHistory";
 
 type Item =
   | { role: "user" | "assistant"; content: string; image?: string }
@@ -45,13 +47,31 @@ export function FlyAIPage({
   onBack: () => void;
   onOpenChat: (p: UserProfile) => void;
 }) {
-  const [items, setItems] = useState<Item[]>([
-    {
-      role: "assistant",
-      content:
-        "আসসালামু আলাইকুম! আমি **Fly AI** 🤖 — যেকোনো প্রশ্ন করুন। ছবি বানাতে 🖼️ বাটনে চাপ দিয়ে ছবির বর্ণনা লিখুন।\n\nHi! Ask me anything, or tap 🖼️ to create an image.",
-    },
-  ]);
+  const { user } = useAuth();
+  const storeKey = aiHistoryKey(user?.uid);
+  const [items, setItems] = useState<Item[]>([{ role: "assistant", content: AI_WELCOME }]);
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(storeKey);
+      const saved = raw ? (JSON.parse(raw) as Item[]) : null;
+      if (Array.isArray(saved) && saved.length) setItems(saved);
+    } catch { /* ignore */ }
+    setLoaded(true);
+  }, [storeKey]);
+  useEffect(() => {
+    if (!loaded || busy) return;
+    try { localStorage.setItem(storeKey, JSON.stringify(items)); }
+    catch {
+      try { localStorage.setItem(storeKey, JSON.stringify(items.map((m) => ("image" in m ? { ...m, image: undefined } : m)))); } catch { /* full */ }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, loaded]);
+  const clearChat = () => {
+    if (!window.confirm("পুরো Fly AI চ্যাট হিস্টোরি মুছে ফেলবেন?")) return;
+    localStorage.removeItem(storeKey);
+    setItems([{ role: "assistant", content: AI_WELCOME }]);
+  };
   const [text, setText] = useState("");
   const [imageMode, setImageMode] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -225,25 +245,10 @@ export function FlyAIPage({
           <p className="font-semibold text-gray-900 leading-tight">Fly AI</p>
           <p className="text-xs text-gray-500">Ask anything · Create images</p>
         </div>
-        <button
-          onClick={() => void contactAdmin()}
-          disabled={adminBusy}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-sky-50 text-sky-700 text-xs font-semibold disabled:opacity-60"
-        >
-          {adminBusy ? <Loader2 size={14} className="animate-spin" /> : <MessageCircle size={14} />}
-          Contact admin
+        <button onClick={clearChat} aria-label="চ্যাট মুছুন" title="চ্যাট হিস্টোরি মুছুন" className="w-9 h-9 rounded-full bg-gray-50 text-gray-500 flex items-center justify-center">
+          <Trash2 size={17} />
         </button>
       </header>
-
-      <div className="px-4 py-2 bg-sky-50 border-b border-sky-100 text-xs text-sky-800 flex items-center gap-2">
-        <Mail size={14} />
-        <span className="truncate">
-          Admin: <b>Sagor Islam</b> ·{" "}
-          <a className="underline" href={`mailto:${ADMIN_EMAIL}`}>
-            {ADMIN_EMAIL}
-          </a>
-        </span>
-      </div>
 
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 space-y-3">
         {items.map((m, i) => (
@@ -268,7 +273,19 @@ export function FlyAIPage({
                   )}
                   {m.content ? (
                     <div className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1">
-                      <ReactMarkdown>{m.content}</ReactMarkdown>
+                      <ReactMarkdown>{m.content.replace(/\[\[(CONTACT_ADMIN|EMAIL_ADMIN)\]\]/g, "")}</ReactMarkdown>
+                      {m.content.includes("[[CONTACT_ADMIN]]") && (
+                        <button type="button" onClick={() => void contactAdmin()} disabled={adminBusy}
+                          className="not-prose mt-2 flex items-center gap-1.5 px-3 py-2 rounded-full bg-sky-500 text-white text-xs font-semibold disabled:opacity-60">
+                          {adminBusy ? <Loader2 size={14} className="animate-spin" /> : <MessageCircle size={14} />} Contact admin
+                        </button>
+                      )}
+                      {m.content.includes("[[EMAIL_ADMIN]]") && (
+                        <a href={`mailto:${ADMIN_EMAIL}`}
+                          className="not-prose mt-2 inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-indigo-500 text-white text-xs font-semibold no-underline">
+                          <Mail size={14} /> অ্যাডমিনকে ইমেইল করুন
+                        </a>
+                      )}
                     </div>
                   ) : !m.image ? (
                     <Loader2 size={16} className="animate-spin text-gray-400" />

@@ -20,16 +20,22 @@ export async function geminiStream(
   system: string,
   contents: GContent[],
   signal?: AbortSignal,
+  opts?: { search?: boolean },
 ): Promise<{ stream: ReadableStream<Uint8Array> } | { status: number }> {
   const key = geminiKey();
   if (!key) return { status: 500 };
   let lastStatus = 500;
-  for (const model of CHAT_MODELS) {
+  const attempts = CHAT_MODELS.flatMap((model) => (opts?.search ? [{ model, search: true }, { model, search: false }] : [{ model, search: false }]));
+  for (const { model, search } of attempts) {
     const res = await fetch(`${BASE}/${model}:streamGenerateContent?alt=sse`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
       signal: signal ?? null,
-      body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents }),
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: system }] },
+        contents,
+        ...(search ? { tools: [{ google_search: {} }] } : {}),
+      }),
     }).catch(() => null);
     if (!res || !res.ok || !res.body) {
       lastStatus = res?.status ?? 500;
@@ -42,6 +48,8 @@ export async function geminiStream(
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
         let buf = "";
+        let wrote = "";
+        const sources = new Map<string, string>();
         try {
           while (true) {
             const { done, value } = await reader.read();
@@ -54,7 +62,10 @@ export async function geminiStream(
               try {
                 const ev = JSON.parse(line.slice(5).trim());
                 const parts = ev?.candidates?.[0]?.content?.parts ?? [];
-                for (const p of parts) if (typeof p.text === "string" && !p.thought) controller.enqueue(enc.encode(p.text));
+                for (const p of parts) if (typeof p.text === "string" && !p.thought) { wrote += p.text; controller.enqueue(enc.encode(p.text)); }
+                for (const c of ev?.candidates?.[0]?.groundingMetadata?.groundingChunks ?? []) {
+                  if (c?.web?.uri) sources.set(c.web.uri, c.web.title || c.web.uri);
+                }
               } catch {
                 /* partial */
               }
@@ -62,6 +73,10 @@ export async function geminiStream(
           }
         } catch {
           /* client stopped */
+        }
+        if (sources.size && !/sources|সূত্র/i.test(wrote.slice(-400))) {
+          const list = [...sources].slice(0, 5).map(([u, t]) => `- [${t}](${u})`).join("\n");
+          try { controller.enqueue(enc.encode(`\n\n**সূত্র (Sources):**\n${list}`)); } catch { /* closed */ }
         }
         controller.close();
       },
