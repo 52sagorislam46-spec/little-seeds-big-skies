@@ -86,8 +86,58 @@ function Feed({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiRef, refresh]);
+
+  // Pull-to-refresh on the home timeline (Facebook-style, ~1s loader).
+  const [pull, setPull] = useState(0);
+  const [pulling, setPulling] = useState(false);
+  const pullRef = useRef({ startY: -1, dist: 0 });
+  useEffect(() => {
+    const onStart = (e: TouchEvent) => {
+      pullRef.current = { startY: window.scrollY <= 0 ? e.touches[0].clientY : -1, dist: 0 };
+    };
+    const onMove = (e: TouchEvent) => {
+      if (pullRef.current.startY < 0 || pulling) return;
+      const d = e.touches[0].clientY - pullRef.current.startY;
+      pullRef.current.dist = d > 0 ? d * 0.5 : 0;
+      setPull(pullRef.current.dist);
+    };
+    const onEnd = () => {
+      const d = pullRef.current.dist;
+      pullRef.current = { startY: -1, dist: 0 };
+      setPull(0);
+      if (d > 60 && !pulling) {
+        setPulling(true);
+        orderRef.current = [];
+        void Promise.all([refresh(), new Promise((r) => setTimeout(r, 1000))]).finally(() =>
+          setPulling(false),
+        );
+      }
+    };
+    window.addEventListener("touchstart", onStart, { passive: true });
+    window.addEventListener("touchmove", onMove, { passive: true });
+    window.addEventListener("touchend", onEnd);
+    return () => {
+      window.removeEventListener("touchstart", onStart);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onEnd);
+    };
+  }, [refresh, pulling]);
+
   return (
     <div className="pb-20">
+      {(pull > 0 || pulling) && (
+        <div
+          className="fixed left-0 right-0 top-14 z-20 flex justify-center pointer-events-none"
+          style={{ transform: `translateY(${pulling ? 8 : Math.min(pull, 70) - 20}px)` }}
+        >
+          <div className="w-9 h-9 rounded-full bg-white shadow-md border border-gray-100 flex items-center justify-center">
+            <div
+              className={`w-5 h-5 rounded-full border-2 border-sky-500 border-t-transparent ${pulling ? "animate-spin" : ""}`}
+              style={pulling ? undefined : { transform: `rotate(${pull * 4}deg)` }}
+            />
+          </div>
+        </div>
+      )}
       <header className="sticky top-0 bg-white/90 backdrop-blur-xl border-b border-gray-100 px-5 h-14 flex items-center gap-2 z-10">
         <img src={flyLogo.url} alt="Fly" className="w-8 h-8 rounded-xl object-cover" />
         <h1 className="text-xl font-bold text-gray-900">Fly</h1>
