@@ -8,7 +8,7 @@ export type GContent = { role: "user" | "model"; parts: GPart[] };
 
 export function dataUrlPart(url: string): GPart | null {
   const m = /^data:([^;]+);base64,(.*)$/s.exec(url);
-  return m ? { inlineData: { mimeType: m[1], data: m[2] } } : null;
+  return m ? { inlineData: { mimeType: m[1] ?? "image/jpeg", data: m[2] ?? "" } } : null;
 }
 
 export function geminiKey() {
