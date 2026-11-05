@@ -93,11 +93,11 @@ function Feed({
   const pullRef = useRef({ startY: -1, dist: 0 });
   useEffect(() => {
     const onStart = (e: TouchEvent) => {
-      pullRef.current = { startY: window.scrollY <= 0 ? e.touches[0].clientY : -1, dist: 0 };
+      pullRef.current = { startY: window.scrollY <= 0 ? (e.touches[0]?.clientY ?? 0) : -1, dist: 0 };
     };
     const onMove = (e: TouchEvent) => {
       if (pullRef.current.startY < 0 || pulling) return;
-      const d = e.touches[0].clientY - pullRef.current.startY;
+      const d = (e.touches[0]?.clientY ?? 0) - pullRef.current.startY;
       pullRef.current.dist = d > 0 ? d * 0.5 : 0;
       setPull(pullRef.current.dist);
     };
