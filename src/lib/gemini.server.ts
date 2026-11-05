@@ -28,7 +28,7 @@ export async function geminiStream(
     const res = await fetch(`${BASE}/${model}:streamGenerateContent?alt=sse`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-      signal,
+      signal: signal ?? null,
       body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents }),
     }).catch(() => null);
     if (!res || !res.ok || !res.body) {
@@ -87,7 +87,7 @@ export async function geminiImage(
     const res = await fetch(`${BASE}/${model}:generateContent`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-      signal,
+      signal: signal ?? null,
       body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: { responseModalities: ["TEXT", "IMAGE"] } }),
     }).catch(() => null);
     if (!res || !res.ok) {
