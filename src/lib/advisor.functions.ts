@@ -8,10 +8,14 @@ export const getBuildSuggestions = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     if (!process.env["GEMINI_API_KEY"]) return { ok: false as const, error: "AI is not configured." };
     const { geminiStream } = await import("./gemini.server");
-    const r = await geminiStream(
-      "You are a senior engineer and product advisor. Given a description of a build or project, give concrete, actionable improvement suggestions grouped under short markdown headings (e.g. Features, UX, Performance, Security, Code quality). Use bullet points, be specific, keep it under 400 words. Reply in the same language the user wrote in.",
-      [{ role: "user", parts: [{ text: data.description }] }],
-    );
+    const SYS =
+      "You are a senior engineer and product advisor. Given a description of a build or project, give concrete, actionable improvement suggestions grouped under short markdown headings (e.g. Features, UX, Performance, Security, Code quality). Use bullet points, be specific, keep it under 400 words. Reply in the same language the user wrote in.";
+    let r = await geminiStream(SYS, [{ role: "user", parts: [{ text: data.description }] }]);
+    if ("status" in r) {
+      const { groqStream } = await import("./groq.server");
+      const g = await groqStream([{ role: "system", content: SYS }, { role: "user", content: data.description }]);
+      if (!("status" in g)) r = g;
+    }
     if ("status" in r) {
       return {
         ok: false as const,

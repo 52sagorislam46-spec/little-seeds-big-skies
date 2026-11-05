@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { groqStream } from "@/lib/groq.server";
+import { freeImage } from "@/lib/free-image.server";
 import { geminiStream, geminiImage, dataUrlPart, type GContent, type GPart } from "@/lib/gemini.server";
 
 const SYSTEM = `You are "Fly AI", the friendly built-in assistant of the Fly social media & chat app.
@@ -37,7 +39,8 @@ export const Route = createFileRoute("/api/fly-ai")({
           if (!prompt) return Response.json({ error: "Describe the picture first." }, { status: 400 });
           const src =
             typeof body.image === "string" && body.image.startsWith("data:image/") ? body.image : null;
-          const r = await geminiImage(prompt, src, request.signal);
+          let r: Awaited<ReturnType<typeof freeImage>> = await freeImage(prompt, src, request.signal);
+          if ("status" in r) r = await geminiImage(prompt, src, request.signal);
           if ("status" in r) {
             const status = r.status === 422 ? 422 : r.status === 429 ? 429 : 500;
             const error =
@@ -66,7 +69,14 @@ export const Route = createFileRoute("/api/fly-ai")({
           }
           return { role: "user", parts };
         });
-        const r = await geminiStream(SYSTEM, contents, request.signal);
+        let r = await geminiStream(SYSTEM, contents, request.signal);
+        if ("status" in r) {
+          const g = await groqStream(
+            [{ role: "system", content: SYSTEM }, ...msgs.map((m) => ({ role: m.role, content: m.content.slice(0, 6000) || "..." }))],
+            request.signal,
+          );
+          if (!("status" in g)) r = g;
+        }
         if ("status" in r) return new Response(fail(r.status), { status: r.status || 500 });
         return new Response(r.stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
       },
