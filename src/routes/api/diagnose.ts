@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { groqStream } from "@/lib/groq.server";
 import { geminiStream, dataUrlPart, type GContent, type GPart } from "@/lib/gemini.server";
 
 const SYSTEM = `তুমি "Fly Agro" — বাংলাদেশের কৃষকের বন্ধু, একজন অভিজ্ঞ কৃষিবিদ, পশু চিকিৎসক ও মৎস্য বিশেষজ্ঞ। সবসময় সহজ, আঞ্চলিক কৃষক বুঝতে পারে এমন বাংলায় উত্তর দেবে।
@@ -55,7 +56,12 @@ export const Route = createFileRoute("/api/diagnose")({
             .slice(-12)
             .map((m): GContent => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content.slice(0, 6000) || "..." }] })),
         ];
-        const r = await geminiStream(SYSTEM, contents, request.signal);
+        let r = await geminiStream(SYSTEM, contents, request.signal);
+        if ("status" in r) {
+          const txt = contents.flatMap((c) => c.parts).map((p) => ("text" in p ? p.text : "")).join("\n");
+          const g = await groqStream([{ role: "system", content: SYSTEM }, { role: "user", content: txt }], request.signal);
+          if (!("status" in g)) r = g;
+        }
         if ("status" in r) {
           const msg =
             r.status === 429
