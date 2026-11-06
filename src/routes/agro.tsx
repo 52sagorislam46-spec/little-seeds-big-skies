@@ -223,11 +223,11 @@ function Index() {
             {!answer && !loading && (
               <div className="space-y-3">
                 <textarea value={question} onChange={(e) => setQuestion(e.target.value)} rows={2}
-                  placeholder="কোনো প্রশ্ন থাকলে লিখুন (ঐচ্ছিক) — যেমন: পাতায় দাগ পড়ছে কেন?"
+                  placeholder=""
                   className="w-full rounded-2xl border border-input bg-card p-4 text-base text-foreground outline-none focus:ring-2 focus:ring-ring" />
                 <button type="button" onClick={analyze}
                   className="tap-btn flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-5 text-xl font-bold text-primary-foreground shadow-lg active:scale-[0.98]">
-                  <Send className="h-6 w-6" /> রোগ নির্ণয় করুন
+                  <Send className="h-6 w-6" /> সার্চ করুন
                 </button>
               </div>
             )}
