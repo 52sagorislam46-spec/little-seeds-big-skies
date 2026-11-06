@@ -3,8 +3,8 @@
  * and release notes). Publishing notifies every user automatically.
  */
 import { useState } from "react";
-import { ArrowLeft, Loader2, Rocket } from "lucide-react";
-import { publishAppUpdate, useAppUpdate } from "../../lib/appUpdate";
+import { ArrowLeft, Loader2, Rocket, Trash2 } from "lucide-react";
+import { deleteAppUpdate, publishAppUpdate, useAppUpdate } from "../../lib/appUpdate";
 
 export function AppUpdateManagerPage({ onBack }: { onBack: () => void }) {
   const { update } = useAppUpdate();
@@ -14,6 +14,23 @@ export function AppUpdateManagerPage({ onBack }: { onBack: () => void }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [ok, setOk] = useState(false);
+
+  const [deleting, setDeleting] = useState(false);
+  const remove = async () => {
+    if (!window.confirm("আপনি কি নিশ্চিত এই আপডেটটি মুছে ফেলতে চান?")) return;
+    setDeleting(true);
+    setMsg("");
+    try {
+      await deleteAppUpdate();
+      setOk(true);
+      setMsg("🗑️ আপডেট ডিলিট হয়েছে। ইউজাররা আর এটি দেখবে না।");
+    } catch {
+      setOk(false);
+      setMsg("ডিলিট করা যায়নি। আবার চেষ্টা করুন।");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const publish = async () => {
     if (!version.trim() || !url.trim()) {
@@ -72,6 +89,14 @@ export function AppUpdateManagerPage({ onBack }: { onBack: () => void }) {
               <p className="text-xs text-gray-400">
                 পাবলিশ: {new Date(update.publishedAt).toLocaleString()}
               </p>
+              <button
+                onClick={() => void remove()}
+                disabled={deleting}
+                className="mt-2 w-full h-10 rounded-xl bg-red-50 text-red-600 font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                {deleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                আপডেট ডিলিট করুন
+              </button>
             </>
           ) : (
             <p className="text-sm text-gray-400">

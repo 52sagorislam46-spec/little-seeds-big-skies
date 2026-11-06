@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDocs,
   onSnapshot,
@@ -146,6 +147,11 @@ export async function publishAppUpdate(input: {
     { merge: true },
   );
   await broadcastAppUpdate(input);
+}
+
+/** Admin only: removes the published update so no one sees it anymore. */
+export async function deleteAppUpdate() {
+  await deleteDoc(doc(db, "app_update", UPDATE_DOC));
 }
 
 /** Sensible file name for the downloaded update. */
