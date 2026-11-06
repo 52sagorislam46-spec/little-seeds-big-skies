@@ -22,7 +22,7 @@ import {
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { AppUpdateModal } from "./AppUpdate";
-import { aiHistoryPreview } from "./flyAiHistory";
+import { aiHistoryPreview, aiHistoryKey } from "./flyAiHistory";
 import { Bot } from "lucide-react";
 import { markUpdateSeen, useAppUpdate } from "../../lib/appUpdate";
 import { Avatar } from "./Avatar";
