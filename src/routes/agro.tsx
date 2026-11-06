@@ -223,7 +223,7 @@ function Index() {
             {!answer && !loading && (
               <div className="space-y-3">
                 <textarea value={question} onChange={(e) => setQuestion(e.target.value)} rows={2}
-                  placeholder=""
+                  placeholder="আপনার সমস্যার কথা বলুন?"
                   className="w-full rounded-2xl border border-input bg-card p-4 text-base text-foreground outline-none focus:ring-2 focus:ring-ring" />
                 <button type="button" onClick={analyze}
                   className="tap-btn flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-5 text-xl font-bold text-primary-foreground shadow-lg active:scale-[0.98]">
