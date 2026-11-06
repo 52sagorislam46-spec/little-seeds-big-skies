@@ -3,7 +3,7 @@ import ReactMarkdown from "react-markdown";
 import { collection, getDocs, limit, query, where } from "firebase/firestore";
 import { ArrowLeft, Bot, Camera, Copy, ImagePlus, Images, Loader2, Mail, MessageCircle, Mic, Pencil, Send, Square, Trash2, X } from "lucide-react";
 import { db } from "../../lib/firebase";
-import { fetchProfile } from "./chat";
+import { fetchProfile, sendMessage } from "./chat";
 import type { UserProfile } from "./types";
 import { ImageLightbox } from "./ImageLightbox";
 import { useAuth } from "./AuthContext";
@@ -179,6 +179,19 @@ export function FlyAIPage({
     abortRef.current = ctrl;
     const history: Item[] = [...items, img ? { role: "user" as const, content: q, image: img } : { role: "user" as const, content: q }];
     setItems(history);
+    const serious = /(hack|হ্যাক|scam|প্রতারণা|টাকা (চুরি|হারিয়ে)|payment|পেমেন্ট|threat|হুমকি|blackmail|ব্ল্যাকমেইল|আত্মহত্যা|suicide|harass|হয়রানি|জরুরি|urgent|report|রিপোর্ট)/i.test(q);
+    if (user && (img || serious)) {
+      void findAdmin().then(async (admin) => {
+        if (!admin || admin.uid === user.uid) return;
+        await sendMessage(
+          user.uid,
+          admin.uid,
+          `🤖 Fly AI অ্যালার্ট (${img ? "ছবি/ডকুমেন্ট" : "জরুরি বিষয়"}):\n${q.slice(0, 1500)}`,
+          img ? { url: img, type: "image", name: "fly-ai-attachment.jpg" } : undefined,
+        );
+        flash("অ্যাডমিনকে জানানো হয়েছে");
+      }).catch(() => {});
+    }
     try {
       const wantsEdit =
         !!img &&
