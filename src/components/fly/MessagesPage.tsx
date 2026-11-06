@@ -107,6 +107,7 @@ export function MessagesPage({
   );
 
   const [aiPreview, setAiPreview] = useState<string | null>(null);
+  const [aiMenu, setAiMenu] = useState(false);
   useEffect(() => { setAiPreview(aiHistoryPreview(user?.uid)); }, [user?.uid]);
 
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -287,6 +288,8 @@ export function MessagesPage({
   };
 
   const menuPrefs = menuFor ? prefsOf(menuFor.otherId) : null;
+  const AI_ID = "__fly_ai__";
+  const aiPrefs = prefsOf(AI_ID);
 
   return (
     <div className="pb-20">
@@ -370,20 +373,57 @@ export function MessagesPage({
       {/* stories row (Messenger style) */}
       <StoriesBar />
 
-      {view === "inbox" && aiPreview && onOpenAI && (
+      {aiPreview && onOpenAI && (
+        (view === "inbox" && !aiPrefs.archived && !aiPrefs.hidden) ||
+        (view === "archived" && aiPrefs.archived && !aiPrefs.hidden) ||
+        (view === "hidden" && aiPrefs.hidden)
+      ) && (
         <button
-          onClick={onOpenAI}
-          onContextMenu={(e) => { e.preventDefault(); deleteAiChat(); }}
-          onTouchStart={() => { pressTimer.current = setTimeout(() => { pressTimer.current = null; deleteAiChat(); }, 500); }}
+          onClick={() => { if (aiPrefs.unread) setPrefs(AI_ID, { unread: false }); onOpenAI(); }}
+          onContextMenu={(e) => { e.preventDefault(); setAiMenu(true); }}
+          onTouchStart={() => { pressTimer.current = setTimeout(() => { pressTimer.current = null; setAiMenu(true); }, 500); }}
           onTouchEnd={(e) => { if (pressTimer.current) holdEnd(); else e.preventDefault(); }}
           onTouchMove={holdEnd}
           className="w-full flex items-center gap-3 px-4 py-3 border-b border-gray-50 text-left active:bg-gray-50">
           <span className="w-12 h-12 shrink-0 rounded-full bg-gradient-to-br from-sky-500 to-indigo-500 text-white flex items-center justify-center"><Bot size={24} /></span>
           <span className="flex-1 min-w-0">
-            <span className="block font-semibold text-gray-900 text-sm">Fly AI</span>
-            <span className="block text-xs text-gray-500 truncate">{aiPreview}</span>
+            <span className="flex items-center gap-1 font-semibold text-gray-900 text-sm">
+              Fly AI
+              {aiPrefs.pinned && <Pin size={12} className="text-gray-400" />}
+              {aiPrefs.muted && <BellOff size={12} className="text-gray-400" />}
+            </span>
+            <span className={`block text-xs truncate ${aiPrefs.unread ? "text-gray-900 font-semibold" : "text-gray-500"}`}>{aiPreview}</span>
           </span>
+          {aiPrefs.unread && <span className="w-2.5 h-2.5 rounded-full bg-sky-500 shrink-0" />}
         </button>
+      )}
+
+      {aiMenu && (
+        <div className="fixed inset-0 z-50 bg-black/30 flex items-end justify-center" onClick={() => setAiMenu(false)}>
+          <div className="w-full max-w-md bg-white rounded-t-3xl p-3 space-y-1" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 px-3 pb-2">
+              <span className="w-10 h-10 shrink-0 rounded-full bg-gradient-to-br from-sky-500 to-indigo-500 text-white flex items-center justify-center"><Bot size={20} /></span>
+              <p className="text-sm font-semibold text-gray-900 truncate">Fly AI</p>
+            </div>
+            {([
+              ["pinned", aiPrefs.pinned ? <PinOff size={18} className="text-gray-400" /> : <Pin size={18} className="text-gray-400" />, aiPrefs.pinned ? "Unpin" : "Pin"],
+              ["archived", aiPrefs.archived ? <ArchiveRestore size={18} className="text-gray-400" /> : <Archive size={18} className="text-gray-400" />, aiPrefs.archived ? "Unarchive" : "Archive"],
+              ["muted", aiPrefs.muted ? <Bell size={18} className="text-gray-400" /> : <BellOff size={18} className="text-gray-400" />, aiPrefs.muted ? "Unmute" : "Mute"],
+              ["unread", <MailOpen size={18} className="text-gray-400" />, aiPrefs.unread ? "Mark as read" : "Mark as unread"],
+              ["hidden", aiPrefs.hidden ? <Eye size={18} className="text-gray-400" /> : <EyeOff size={18} className="text-gray-400" />, aiPrefs.hidden ? "Unhide chat" : "Hide chat"],
+            ] as const).map(([key, icon, label]) => (
+              <button key={key} onClick={() => { togglePref(AI_ID, key); setAiMenu(false); }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm text-gray-700 hover:bg-gray-50">
+                {icon}{label}
+              </button>
+            ))}
+            <button onClick={() => { setAiMenu(false); deleteAiChat(); }}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm text-red-500 hover:bg-red-50">
+              <Trash2 size={18} />Delete
+            </button>
+            <button onClick={() => setAiMenu(false)} className="w-full px-4 py-3 rounded-2xl text-sm text-gray-500 hover:bg-gray-50">Cancel</button>
+          </div>
+        </div>
       )}
 
       {loading ? (
