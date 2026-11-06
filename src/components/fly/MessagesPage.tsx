@@ -280,6 +280,12 @@ export function MessagesPage({
     pressTimer.current = null;
   };
 
+  const deleteAiChat = () => {
+    if (!window.confirm("Fly AI চ্যাট হিস্টোরি ডিলিট করবেন?")) return;
+    try { localStorage.removeItem(aiHistoryKey(user?.uid)); } catch { /* ignore */ }
+    setAiPreview(null);
+  };
+
   const menuPrefs = menuFor ? prefsOf(menuFor.otherId) : null;
 
   return (
@@ -365,7 +371,13 @@ export function MessagesPage({
       <StoriesBar />
 
       {view === "inbox" && aiPreview && onOpenAI && (
-        <button onClick={onOpenAI} className="w-full flex items-center gap-3 px-4 py-3 border-b border-gray-50 text-left active:bg-gray-50">
+        <button
+          onClick={onOpenAI}
+          onContextMenu={(e) => { e.preventDefault(); deleteAiChat(); }}
+          onTouchStart={() => { pressTimer.current = setTimeout(() => { pressTimer.current = null; deleteAiChat(); }, 500); }}
+          onTouchEnd={(e) => { if (pressTimer.current) holdEnd(); else e.preventDefault(); }}
+          onTouchMove={holdEnd}
+          className="w-full flex items-center gap-3 px-4 py-3 border-b border-gray-50 text-left active:bg-gray-50">
           <span className="w-12 h-12 shrink-0 rounded-full bg-gradient-to-br from-sky-500 to-indigo-500 text-white flex items-center justify-center"><Bot size={24} /></span>
           <span className="flex-1 min-w-0">
             <span className="block font-semibold text-gray-900 text-sm">Fly AI</span>

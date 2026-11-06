@@ -74,10 +74,13 @@ export const Route = createFileRoute("/api/fly-ai")({
           }
           return { role: "user", parts };
         });
-        let r = await geminiStream(SYSTEM, contents, request.signal, { search: true });
+        const now = new Date();
+        const dateNote = `\n- CURRENT DATE (authoritative, from the server clock): ${now.toUTCString()} — the current year is ${now.getUTCFullYear()}. Your training data may be older; trust this date, never claim the user's device date is wrong, and for news/elections/sports/"current" questions search Google for the latest ${now.getUTCFullYear()} information.`;
+        const SYS = SYSTEM + dateNote;
+        let r = await geminiStream(SYS, contents, request.signal, { search: true });
         if ("status" in r) {
           const g = await groqStream(
-            [{ role: "system", content: SYSTEM }, ...msgs.map((m) => ({ role: m.role, content: m.content.slice(0, 6000) || "..." }))],
+            [{ role: "system", content: SYS }, ...msgs.map((m) => ({ role: m.role, content: m.content.slice(0, 6000) || "..." }))],
             request.signal,
           );
           if (!("status" in g)) r = g;
