@@ -157,7 +157,7 @@ function Index() {
   const reset = () => { setImage(null); setAnswer(""); setQuestion(""); setError(""); setChat([]); setFollow(""); };
 
   return (
-    <div className="mx-auto min-h-screen max-w-md bg-background pb-10">
+    <div className="agro-theme mx-auto min-h-screen max-w-md bg-background pb-10">
       <header className="sticky top-0 z-10 flex items-center gap-3 bg-primary px-5 py-4 text-primary-foreground shadow-md">
         <Link to="/" aria-label="ফিরে যান" className="text-2xl leading-none">←</Link>
         <div className="grid h-11 w-11 place-items-center rounded-full bg-accent text-accent-foreground">
@@ -189,12 +189,12 @@ function Index() {
               <h3 className="mb-1 font-semibold text-foreground">ক্যাটাগরি সিলেক্ট করুন</h3>
               <p className="mb-3 text-sm text-muted-foreground">যেটার ছবি তুলবেন সেটাতে ট্যাপ করুন — সরাসরি ক্যামেরা বা গ্যালারি খুলে যাবে।</p>
               <div className="no-select grid grid-cols-3 gap-2">
-                {categories.map((c) => (
+                {categories.map((c, ci) => (
                   <button type="button" key={c.id} onClick={() => openCategory(c)} aria-label={c.label}
                     className={`tap-btn flex flex-col items-center gap-1.5 rounded-xl px-2 py-3 text-center text-sm font-medium transition active:scale-[0.96] ${
                       category?.id === c.id
                         ? "bg-primary text-primary-foreground ring-2 ring-primary"
-                        : "bg-secondary text-secondary-foreground"
+                        : `agro-cat-${ci} shadow-sm`
                     }`}>
                     <c.Icon className="h-6 w-6" />
                     {c.label}
@@ -203,7 +203,7 @@ function Index() {
               </div>
             </section>
 
-            <section className="rounded-2xl bg-muted p-4 text-sm text-muted-foreground">
+            <section className="rounded-2xl bg-muted p-4 text-sm ring-1 ring-accent text-muted-foreground">
               <b className="text-foreground">ভালো ফলের জন্য:</b> দিনের আলোতে, কাছ থেকে, আক্রান্ত অংশ স্পষ্ট করে ছবি তুলুন।
             </section>
           </>
